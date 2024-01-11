@@ -2,7 +2,6 @@ import pygame
 import sys
 
 import tiles
-import board
 
 BEFORE_GAME = 0
 CHOOSING_TIME = 1
@@ -30,6 +29,12 @@ class Logic:
     
     def choose_time(self, input):
         pass
+
+    def inform_GUI_water_stage(self, first_stage):
+        if(first_stage):
+            self.my_board.draw_water_stage()
+        else:
+            self.enemy_board.draw_water_stage()
 
 
     

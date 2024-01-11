@@ -1,11 +1,8 @@
 import tiles
 
-BOARD_SIZE = 10
-
-
 class Board:
     def __init__(self):
-        self.array = [[tiles.NOTHING] * BOARD_SIZE for _ in range(BOARD_SIZE)]
+        self.array = [[tiles.NOTHING] * tiles.ROWS for _ in range(tiles.COLS)]
 
     def get_tile(self, x, y):
         return self.array[x][y]

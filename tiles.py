@@ -1,7 +1,5 @@
 import pygame
 
-import board
-
 NOTHING = 0
 MISS = 1
 HIT = 2
@@ -57,6 +55,7 @@ class Tile:
         self.player_board = is_player_board
         self.y_offset = 20
         self.pregame = True
+        self.water_stage = True
         self.water_image1 = pygame.image.load(WATER1_PNG).convert_alpha()
         self.water_image1 = pygame.transform.scale(self.water_image1, (TILE_SIZE, TILE_SIZE))
         self.water_image2 = pygame.image.load(WATER2_PNG).convert_alpha()
@@ -80,14 +79,17 @@ class Tile:
     def set_if_pregame(self, is_pregame):
         self.pregame = is_pregame
 
+    def set_water_stage(self, is_first_stage):
+        self.water_stage = is_first_stage
 
-    def draw_board(self, first_stage):
+
+    def draw_board(self):
         for row in range(ROWS):
             for col in range(COLS):
                 x = col * TILE_SIZE + self.x_offset
                 y = row * TILE_SIZE + self.y_offset
 
-                if(first_stage):
+                if(self.water_stage):
                     self.surface.blit(self.water_image1, (x, y))
                 else:
                     self.surface.blit(self.water_image2, (x, y))
@@ -222,11 +224,11 @@ class Tile:
     def fill_bottom_black(self):
         pygame.draw.rect(self.surface, (0, 0, 0), (0, 540, self.surface.get_width(), self.surface.get_height() - 540))
 
-    def draw_during_game(self, first_stage):
+    def draw_during_game(self):
         self.draw_outlines(self)
         self.fill_bottom_black(self)
 
-        self.draw_board(self, first_stage)
+        self.draw_board(self)
         self.draw_tiles(self)
 
         self.draw_bottom_bar(self)
