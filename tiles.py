@@ -1,5 +1,7 @@
 import pygame
 
+import board
+
 NOTHING = 0
 MISS = 1
 HIT = 2
@@ -32,7 +34,6 @@ FRONT_SHIP_V_HNS = 21
 BACK_SHIP_V_HNS = 22
 MIDDLE_SHIP_V_HNS = 23
 
-BOARD_SIZE = 10
 TILE_SIZE = 50
 ROWS = 10
 COLS = 10
@@ -50,10 +51,10 @@ MIDDLE_SHIP_PNG = "images\\middle_ship.png"
 
 
 class Tile:
-    def __init__(self, display, player_board = True):
-        self.board = [[NOTHING] * BOARD_SIZE for _ in range(BOARD_SIZE)]
+    def __init__(self, display, my_board, is_player_board = True):
+        self.board = my_board
         self.surface = display
-        self.player_board = player_board
+        self.player_board = is_player_board
         self.y_offset = 20
         self.pregame = True
         self.water_image1 = pygame.image.load(WATER1_PNG).convert_alpha()
@@ -66,7 +67,7 @@ class Tile:
         self.hit_and_sunk_image = pygame.transform.scale(self.hit_and_sunk_image, (TILE_SIZE, TILE_SIZE))
         self.hit_image = pygame.image.load(HIT_PNG).convert_alpha()
         self.hit_image = pygame.transform.scale(self.hit_image, (TILE_SIZE, TILE_SIZE))
-        if(player_board):
+        if(is_player_board):
             self.x_offset = 20
             self.front_ship_image = pygame.image.load(FRONT_SHIP_PNG).convert_alpha()
             self.front_ship_image = pygame.transform.scale(self.front_ship_image, (TILE_SIZE, TILE_SIZE))
@@ -74,10 +75,6 @@ class Tile:
             self.middle_ship_image = pygame.transform.scale(self.middle_ship_image, (TILE_SIZE, TILE_SIZE))
         else:
             self.x_offset = 560
-
-
-    def set_tile(self, row, col, value):
-        self.board[row][col] = value
 
 
     def set_if_pregame(self, is_pregame):
@@ -104,62 +101,62 @@ class Tile:
                         x = col * TILE_SIZE + self.x_offset
                         y = row * TILE_SIZE + self.y_offset
 
-                        if(self.board[row][col] == SETTING_SHIP):
+                        if(self.board.get_tile(row, col) == SETTING_SHIP):
                             self.surface.blit(self.hit_image, (x, y))
-                        elif(self.board[row][col] == SET_SHIP):
+                        elif(self.board.get_tile(row, col) == SET_SHIP):
                             self.surface.blit(self.hit_and_sunk_image, (x, y))
             else:
                 pass
         else:
-            if(self.player_board):  # TODO: - rysowanie dla tego co przeciwnik trafil tez - korzystac z front_ship_image = pygame.transform.rotate
+            if(self.player_board):
                 for row in range(ROWS):
                     for col in range(COLS):
                         x = col * TILE_SIZE + self.x_offset
                         y = row * TILE_SIZE + self.y_offset
 
-                        if(self.board[row][col] == MISS):
+                        if(self.board.get_tile(row, col) == MISS):
                             self.surface.blit(self.miss_image, (x, y))
 
-                        elif(self.board[row][col] == FRONT_SHIP_H or self.board[row][col] == FRONT_SHIP_H_HIT or self.board[row][col] == FRONT_SHIP_H_HNS):
+                        elif(self.board.get_tile(row, col) == FRONT_SHIP_H or self.board.get_tile(row, col) == FRONT_SHIP_H_HIT or self.board.get_tile(row, col) == FRONT_SHIP_H_HNS):
                             rotated_image = pygame.transform.rotate(self.front_ship_image, 90)
                             self.surface.blit(rotated_image, (x, y))
-                            if(self.board[row][col] == FRONT_SHIP_H_HIT):
+                            if(self.board.get_tile(row, col) == FRONT_SHIP_H_HIT):
                                 self.surface.blit(self.hit_image, (x, y))
-                            elif(self.board[row][col] == FRONT_SHIP_H_HNS):
+                            elif(self.board.get_tile(row, col) == FRONT_SHIP_H_HNS):
                                 self.surface.blit(self.hit_and_sunk_image, (x, y))
-                        elif(self.board[row][col] == MIDDLE_SHIP_H or self.board[row][col] == MIDDLE_SHIP_H_HIT or self.board[row][col] == MIDDLE_SHIP_H_HNS):
+                        elif(self.board.get_tile(row, col) == MIDDLE_SHIP_H or self.board.get_tile(row, col) == MIDDLE_SHIP_H_HIT or self.board.get_tile(row, col) == MIDDLE_SHIP_H_HNS):
                             rotated_image = pygame.transform.rotate(self.middle_ship_image, 90)
                             self.surface.blit(rotated_image, (x, y))
-                            if(self.board[row][col] == MIDDLE_SHIP_H_HIT):
+                            if(self.board.get_tile(row, col) == MIDDLE_SHIP_H_HIT):
                                 self.surface.blit(self.hit_image, (x, y))
-                            elif(self.board[row][col] == MIDDLE_SHIP_H_HNS):
+                            elif(self.board.get_tile(row, col) == MIDDLE_SHIP_H_HNS):
                                 self.surface.blit(self.hit_and_sunk_image, (x, y))
-                        elif(self.board[row][col] == BACK_SHIP_H or self.board[row][col] == BACK_SHIP_H_HIT or self.board[row][col] == BACK_SHIP_H_HNS):
+                        elif(self.board.get_tile(row, col) == BACK_SHIP_H or self.board.get_tile(row, col) == BACK_SHIP_H_HIT or self.board.get_tile(row, col) == BACK_SHIP_H_HNS):
                             rotated_image = pygame.transform.rotate(self.front_ship_image, -90)
                             self.surface.blit(rotated_image, (x, y))
-                            if(self.board[row][col] == BACK_SHIP_H_HIT):
+                            if(self.board.get_tile(row, col) == BACK_SHIP_H_HIT):
                                 self.surface.blit(self.hit_image, (x, y))
-                            elif(self.board[row][col] == BACK_SHIP_H_HNS):
+                            elif(self.board.get_tile(row, col) == BACK_SHIP_H_HNS):
                                 self.surface.blit(self.hit_and_sunk_image, (x, y))
                         
-                        elif(self.board[row][col] == FRONT_SHIP_V or self.board[row][col] == FRONT_SHIP_V_HIT or self.board[row][col] == FRONT_SHIP_V_HNS):
+                        elif(self.board.get_tile(row, col) == FRONT_SHIP_V or self.board.get_tile(row, col) == FRONT_SHIP_V_HIT or self.board.get_tile(row, col) == FRONT_SHIP_V_HNS):
                             self.surface.blit(self.front_ship_image, (x, y))
-                            if(self.board[row][col] == FRONT_SHIP_V_HIT):
+                            if(self.board.get_tile(row, col) == FRONT_SHIP_V_HIT):
                                 self.surface.blit(self.hit_image, (x, y))
-                            elif(self.board[row][col] == FRONT_SHIP_V_HNS):
+                            elif(self.board.get_tile(row, col) == FRONT_SHIP_V_HNS):
                                 self.surface.blit(self.hit_and_sunk_image, (x, y))
-                        elif(self.board[row][col] == MIDDLE_SHIP_V or self.board[row][col] == MIDDLE_SHIP_V_HIT or self.board[row][col] == MIDDLE_SHIP_V_HNS):
+                        elif(self.board.get_tile(row, col) == MIDDLE_SHIP_V or self.board.get_tile(row, col) == MIDDLE_SHIP_V_HIT or self.board.get_tile(row, col) == MIDDLE_SHIP_V_HNS):
                             self.surface.blit(self.middle_ship_image, (x, y))
-                            if(self.board[row][col] == MIDDLE_SHIP_V_HIT):
+                            if(self.board.get_tile(row, col) == MIDDLE_SHIP_V_HIT):
                                 self.surface.blit(self.hit_image, (x, y))
-                            elif(self.board[row][col] == MIDDLE_SHIP_V_HNS):
+                            elif(self.board.get_tile(row, col) == MIDDLE_SHIP_V_HNS):
                                 self.surface.blit(self.hit_and_sunk_image, (x, y))
-                        elif(self.board[row][col] == BACK_SHIP_V or self.board[row][col] == BACK_SHIP_V_HIT or self.board[row][col] == BACK_SHIP_V_HNS):
+                        elif(self.board.get_tile(row, col) == BACK_SHIP_V or self.board.get_tile(row, col) == BACK_SHIP_V_HIT or self.board.get_tile(row, col) == BACK_SHIP_V_HNS):
                             rotated_image = pygame.transform.rotate(self.front_ship_image, 180)
                             self.surface.blit(rotated_image, (x, y))
-                            if(self.board[row][col] == BACK_SHIP_V_HIT):
+                            if(self.board.get_tile(row, col) == BACK_SHIP_V_HIT):
                                 self.surface.blit(self.hit_image, (x, y))
-                            elif(self.board[row][col] == BACK_SHIP_V_HNS):
+                            elif(self.board.get_tile(row, col) == BACK_SHIP_V_HNS):
                                 self.surface.blit(self.hit_and_sunk_image, (x, y))
 
             else:
@@ -168,18 +165,18 @@ class Tile:
                         x = col * TILE_SIZE + self.x_offset
                         y = row * TILE_SIZE + self.y_offset
 
-                        if(self.board[row][col] == MISS):
+                        if(self.board.get_tile(row, col) == MISS):
                             self.surface.blit(self.miss_image, (x, y))
-                        elif(self.board[row][col] == HIT):
+                        elif(self.board.get_tile(row, col) == HIT):
                             self.surface.blit(self.hit_image, (x, y))
-                        elif(self.board[row][col] == HIT_AND_SUNK):
+                        elif(self.board.get_tile(row, col) == HIT_AND_SUNK):
                             self.surface.blit(self.hit_and_sunk_image, (x, y))
 
-                        elif(self.board[row][col] == FRONT_SHIP_H_HNS):
+                        elif(self.board.get_tile(row, col) == FRONT_SHIP_H_HNS):
                             rotated_image = pygame.transform.rotate(self.front_ship_image, 90)
                             self.surface.blit(rotated_image, (x, y))
                             self.surface.blit(self.hit_and_sunk_image, (x, y))
-                        elif(self.board[row][col] == MIDDLE_SHIP_H_HNS):
+                        elif(self.board.get_tile(row, col) == MIDDLE_SHIP_H_HNS):
                             rotated_image = pygame.transform.rotate(self.middle_ship_image, 90)
                             self.surface.blit(rotated_image, (x, y))
                             self.surface.blit(self.hit_and_sunk_image, (x, y))
@@ -188,13 +185,13 @@ class Tile:
                             self.surface.blit(rotated_image, (x, y))
                             self.surface.blit(self.hit_and_sunk_image, (x, y))
 
-                        elif(self.board[row][col] == FRONT_SHIP_V_HNS):
+                        elif(self.board.get_tile(row, col) == FRONT_SHIP_V_HNS):
                             self.surface.blit(self.front_ship_image, (x, y))
                             self.surface.blit(self.hit_and_sunk_image, (x, y))
-                        elif(self.board[row][col] == MIDDLE_SHIP_V_HNS):
+                        elif(self.board.get_tile(row, col) == MIDDLE_SHIP_V_HNS):
                             self.surface.blit(self.middle_ship_image, (x, y))
                             self.surface.blit(self.hit_and_sunk_image, (x, y))
-                        elif(self.board[row][col] == BACK_SHIP_V_HNS):
+                        elif(self.board.get_tile(row, col) == BACK_SHIP_V_HNS):
                             rotated_image = pygame.transform.rotate(self.front_ship_image, 180)
                             self.surface.blit(rotated_image, (x, y))
                             self.surface.blit(self.hit_and_sunk_image, (x, y))
