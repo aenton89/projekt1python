@@ -8,4 +8,4 @@ class Board:
         return self.array[x][y]
     
     def set_tile(self, x, y, tile):
-        self.array[x][y] = tile    
+        self.array[x][y] = tile
