@@ -31,11 +31,11 @@ clock = pygame.time.Clock()
 my_board = board.Board()
 enemy_board = board.Board()
 tile = tiles.Tile(my_board, enemy_board, screen)
-logic = logic.Logic(my_board, enemy_board)
+logics = logic.Logic(my_board, enemy_board)
 
 # licznik klatek
 frame_counter = 0
-frames_per_image_change = 60 * 0.95
+frames_per_image_change = 60 * 1.5
 
 
 # stan gry
@@ -71,7 +71,7 @@ while True:
 
 
     elif(state == PLACEMENT):
-        tile.draw_2(logic.ships_to_place)
+        tile.draw_2(logics.ships_to_place)
 
         # prawy/lewy przycisk - rozstawianie statkow
         if(event.type == pygame.MOUSEBUTTONDOWN):
@@ -81,35 +81,50 @@ while True:
                 if(x >= 50 and x <= 550 and y >= 50 and y <= 550):
                     x, y = get_my_tile_coords(x, y)
                     if(mouse_button == 1):
-                        logic.place_ship(x, y)
+                        logics.place_ship(x, y)
                     elif(mouse_button == 3):
-                        logic.remove_ship(x, y)
+                        logics.remove_ship(x, y)
 
         # enter - zakonczenie rozstawiania tego jednego statku
         elif(event.type == pygame.KEYDOWN):
             if(event.key == pygame.K_RETURN):
-                logic.accept_ship()
+                logics.accept_ship()
                 # sprawdzenie czy wszystkie statki zostaly juz rozstawione
-                if(logic.check_if_all_ships_placed()):
+                if(logics.check_if_all_ships_placed()):
                     state = GAME
-                    logic.place_ship_computer()
+                    logics.place_ship_computer()
 
         
     elif(state == GAME):
-        tile.draw_3(logic.ships_to_sunk)
+        tile.draw_3(logics.ships_to_sunk)
 
         # strzal - lewy przycisk
-        if(event.type == pygame.MOUSEBUTTONDOWN):
-            mouse_button = event.button
-            if(mouse_button == 1):
-                x, y = pygame.mouse.get_pos()
-                if(x >= 600 and x <= 1100 and y >= 50 and y <= 550):
-                    # TODO: POPRAWIC GET_ENEMY_TILE_COORDS - chyba juz dobrze
-                    x, y = get_enemy_tile_coords(x, y)
-                    logic.shoot(x, y)
+        if(logics.turn == logic.PLAYER):
+            if(event.type == pygame.MOUSEBUTTONDOWN):
+                mouse_button = event.button
+                if(mouse_button == 1):
+                    x, y = pygame.mouse.get_pos()
+                    if(x >= 600 and x <= 1100 and y >= 50 and y <= 550):
+                        # TODO: POPRAWIC GET_ENEMY_TILE_COORDS - chyba juz dobrze
+                        x, y = get_enemy_tile_coords(x, y)
+                        logics.shoot(x, y)
+        # tura komputera
+        else:
+            logics.shoot_computer()
+        
+        if(logics.check_if_end() == logic.WON or logics.check_if_end() == logic.LOST):
+            state = END
+            
+
 
     elif(state == END):
-        pass
+        tile.draw_4(logics.check_if_end() == logic.WON)
+
+        if(event.type == pygame.KEYDOWN):
+            if(event.key == pygame.K_RETURN):
+                pygame.quit()
+                sys.exit()
+            
 
 
     # zlicz klatki

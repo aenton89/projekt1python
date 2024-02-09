@@ -9,6 +9,7 @@ WATER2_PNG = "images\\water2.png"
 HIT_PNG = "images\\hit.png"
 HIT_AND_SUNK_PNG = "images\\hit_and_sunk.png"
 MISS_PNG = "images\\miss.png"
+SHIP_PNG = "images\\ship.png"
 
 class Tile:
     def __init__(self, my_board, enemy_board, display):
@@ -36,6 +37,9 @@ class Tile:
         # wczytanie obrazkow nietrafiony/strzal wroga
         self.miss_image = pygame.image.load(MISS_PNG).convert_alpha()
         self.miss_image = pygame.transform.scale(self.miss_image, (TILE_SIZE, TILE_SIZE))
+        # wczytanie obrazka statku
+        self.ship_image = pygame.image.load(SHIP_PNG).convert_alpha()
+        self.ship_image = pygame.transform.scale(self.ship_image, (TILE_SIZE, TILE_SIZE))
 
 
     # update wody
@@ -145,8 +149,11 @@ class Tile:
 
                 # tablica gracza
                 if(self.my_board.array[row][col] == board.SHIP):
-                    pygame.draw.rect(self.surface, (0, 0, 0), (my_x, y, TILE_SIZE, TILE_SIZE))
+                    self.surface.blit(self.ship_image, (my_x, y))
                 elif(self.my_board.array[row][col] == board.ENEMY_SHOT):
+                    self.surface.blit(self.ship_image, (my_x, y))
+                    self.surface.blit(self.miss_image, (my_x, y))
+                elif(self.my_board.array[row][col] == board.MISS):
                     self.surface.blit(self.miss_image, (my_x, y))
                 
                 # tablica przeciwnika
