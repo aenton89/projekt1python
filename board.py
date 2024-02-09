@@ -1,11 +1,22 @@
-import tiles
+ROWS = 10
+COLS = 10
+
+NOTHING = 0
+SHIP = 1
+ENEMY_SHOT = 2
+
+MISS = 3
+HIT = 4
+SUNK = 5
+
+PLACED = 6
+ACCEPTED = 7
 
 class Board:
     def __init__(self):
-        self.array = [[tiles.NOTHING] * tiles.ROWS for _ in range(tiles.COLS)]
-
-    def get_tile(self, x, y):
-        return self.array[x][y]
+        self.array = [[NOTHING] * ROWS for _ in range(COLS)]
     
-    def set_tile(self, x, y, tile):
-        self.array[x][y] = tile
+    def clear(self):
+        for row in range(ROWS):
+            for col in range(COLS):
+                self.array[row][col] = NOTHING

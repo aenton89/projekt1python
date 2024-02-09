@@ -1,305 +1,158 @@
 import pygame
 
-NOTHING = 0
-MISS = 1
-HIT = 2
-HIT_AND_SUNK = 3
-
-FRONT_SHIP_V = 4
-BACK_SHIP_V = 5
-MIDDLE_SHIP_V = 6
-
-FRONT_SHIP_H = 7
-BACK_SHIP_H = 8
-MIDDLE_SHIP_H = 9
-
-SETTING_SHIP = 10
-
-FRONT_SHIP_H_HIT = 11
-BACK_SHIP_H_HIT = 12
-MIDDLE_SHIP_H_HIT = 13
-
-FRONT_SHIP_V_HIT = 14
-BACK_SHIP_V_HIT = 15
-MIDDLE_SHIP_V_HIT = 16
-
-FRONT_SHIP_H_HNS = 17
-BACK_SHIP_H_HNS = 18
-MIDDLE_SHIP_H_HNS = 19
-
-FRONT_SHIP_V_HNS = 20
-BACK_SHIP_V_HNS = 21
-MIDDLE_SHIP_V_HNS = 22
+import board
 
 TILE_SIZE = 50
-ROWS = 10
-COLS = 10
-
-PURPLE = (111, 49, 152)
-OUTLINES_WIDTH = 20
 
 WATER1_PNG = "images\\water1.png"
 WATER2_PNG = "images\\water2.png"
 HIT_PNG = "images\\hit.png"
 HIT_AND_SUNK_PNG = "images\\hit_and_sunk.png"
 MISS_PNG = "images\\miss.png"
-FRONT_SHIP_PNG = "images\\front_ship.png"
-MIDDLE_SHIP_PNG = "images\\middle_ship.png"
-
 
 class Tile:
-    def __init__(self, display, my_board, enemy_board):
+    def __init__(self, my_board, enemy_board, display):
         self.surface = display
-        self.y_offset = 20
+        self.my_board = my_board
+        self.enemy_board = enemy_board
+        # wypelnianie ekranu na bialo
+        self.surface.fill((255, 255, 255))
+        # offsety plansz
+        self.my_board_x_offset = 50
+        self.enemy_board_x_offset = 600
+        self.y_offset = 50
+        # stan wody
         self.water_stage = True
-
-        self.water_image1 = pygame.image.load(WATER1_PNG).convert_alpha()
-        self.water_image1 = pygame.transform.scale(self.water_image1, (TILE_SIZE, TILE_SIZE))
-        self.water_image2 = pygame.image.load(WATER2_PNG).convert_alpha()
-        self.water_image2 = pygame.transform.scale(self.water_image2, (TILE_SIZE, TILE_SIZE))
-        self.miss_image = pygame.image.load(MISS_PNG).convert_alpha()
-        self.miss_image = pygame.transform.scale(self.miss_image, (TILE_SIZE, TILE_SIZE))
-        self.hit_and_sunk_image = pygame.image.load(HIT_AND_SUNK_PNG).convert_alpha()
-        self.hit_and_sunk_image = pygame.transform.scale(self.hit_and_sunk_image, (TILE_SIZE, TILE_SIZE))
+        # wczytanie obrazkow wody
+        self.water1_image = pygame.image.load(WATER1_PNG).convert_alpha()
+        self.water1_image = pygame.transform.scale(self.water1_image, (TILE_SIZE, TILE_SIZE))
+        self.water2_image = pygame.image.load(WATER2_PNG).convert_alpha()
+        self.water2_image = pygame.transform.scale(self.water2_image, (TILE_SIZE, TILE_SIZE))
+        # wczytanie obrazkow trafienia/rozstawiania statkow
         self.hit_image = pygame.image.load(HIT_PNG).convert_alpha()
         self.hit_image = pygame.transform.scale(self.hit_image, (TILE_SIZE, TILE_SIZE))
-    
-        # tylko plansza gracza
-        self.my_board = my_board
-        self.mb_x_offset = 20
+        self.hit_and_sunk_image = pygame.image.load(HIT_AND_SUNK_PNG).convert_alpha()
+        self.hit_and_sunk_image = pygame.transform.scale(self.hit_and_sunk_image, (TILE_SIZE, TILE_SIZE))
+        # wczytanie obrazkow nietrafiony/strzal wroga
+        self.miss_image = pygame.image.load(MISS_PNG).convert_alpha()
+        self.miss_image = pygame.transform.scale(self.miss_image, (TILE_SIZE, TILE_SIZE))
 
-        self.front_ship_image = pygame.image.load(FRONT_SHIP_PNG).convert_alpha()
-        self.front_ship_image = pygame.transform.scale(self.front_ship_image, (TILE_SIZE, TILE_SIZE))
-        self.middle_ship_image = pygame.image.load(MIDDLE_SHIP_PNG).convert_alpha()
-        self.middle_ship_image = pygame.transform.scale(self.middle_ship_image, (TILE_SIZE, TILE_SIZE))
-        
-        # tylko plansza przeciwnika
-        self.enemy_board = enemy_board
-        self.eb_x_offset = 560
 
-        # polozenie accept button
-        self.x1 = 0
-        self.x2 = 0
-        self.y1 = 0
-        self.y2 = 0
-        
+    # update wody
+    def update_water(self):
+        if self.water_stage:
+            self.water_stage = False
+        else:
+            self.water_stage = True
 
-    def set_water_stage(self, is_first_stage):
-        self.water_stage = is_first_stage
 
-    def draw_board(self):
-        for row in range(ROWS):
-            for col in range(COLS):
-                my_x = col * TILE_SIZE + self.mb_x_offset
+    # rysowanie ekranu poczatkowego
+    def draw_1(self):
+        font_title = pygame.font.Font(None, 72)
+        font_subtitle = pygame.font.Font(None, 48)
+
+        text_title = font_title.render("gra w statki", True, (0, 0, 0))
+        text_subtitle = font_subtitle.render("naciśnij ENTER aby kontynuować", True, (0, 0, 0))
+
+        title_rect = text_title.get_rect(center=(self.surface.get_rect().centerx, self.surface.get_rect().centery - 50))
+        subtitle_rect = text_subtitle.get_rect(center=(self.surface.get_rect().centerx, self.surface.get_rect().centery))
+
+        self.surface.blit(text_title, title_rect)
+        self.surface.blit(text_subtitle, subtitle_rect)
+
+
+    # rysowanie ekranu rozstawiania statkow
+    def draw_2(self, map):
+        self.draw_water()
+        self.ships_left(map)
+
+        # napis - Enter zeby zaakceptowac statek
+        font = pygame.font.Font(None, 36)
+        text = font.render("naciśnij ENTER, żeby zaakceptować statek, PPM, żeby cofnąć", True, (0, 0, 0))
+        text_rect = text.get_rect(center=(self.surface.get_rect().centerx, 25))
+        self.surface.blit(text, text_rect)
+
+        # rysowanie stawianych statkow
+        for row in range(board.ROWS):
+            for col in range(board.COLS):
+                my_x = col * TILE_SIZE + self.my_board_x_offset
                 y = row * TILE_SIZE + self.y_offset
-                enemy_x = col * TILE_SIZE + self.eb_x_offset
+
+                if(self.my_board.array[row][col] == board.PLACED):
+                    self.surface.blit(self.hit_image, (my_x, y))
+                elif(self.my_board.array[row][col] == board.ACCEPTED):
+                    self.surface.blit(self.hit_and_sunk_image, (my_x, y))
+    
+
+    # rysowanie ekranu podczas rozgrywki - zatapiania
+    def draw_3(self, map):
+        self.draw_water()
+        self.ships_left(map)
+        self.draw_ships()
+
+
+    # rysowanie ekranu koncowego
+    def draw_4(self, did_i_win):
+        font = pygame.font.Font(None, 72)
+        font_subtitle = pygame.font.Font(None, 48)
+        if(did_i_win):
+            string_text = "WYGRAŁEŚ"
+        else:
+            string_text = "PRZEGRAŁEŚ"
+
+        text = font.render(string_text, True, (0, 0, 0))
+        text_subtitle = font_subtitle.render("naciśnij ENTER aby zakończyć", True, (0, 0, 0))
+        
+        text_rect = text.get_rect(center=(self.surface.get_rect().centerx, self.surface.get_rect().centery - 50))
+        subtitle_rect = text_subtitle.get_rect(center=(self.surface.get_rect().centerx, self.surface.get_rect().centery))
+
+        self.surface.blit(text, text_rect)
+        self.surface.blit(text_subtitle, subtitle_rect)
+
+
+    def draw_water(self):
+        for row in range(board.ROWS):
+            for col in range(board.COLS):
+                my_x = col * TILE_SIZE + self.my_board_x_offset
+                enemy_x = col * TILE_SIZE + self.enemy_board_x_offset
+                y = row * TILE_SIZE + self.y_offset
 
                 if(self.water_stage):
-                    self.surface.blit(self.water_image1, (my_x, y))
-                    self.surface.blit(self.water_image1, (enemy_x, y))
+                    self.surface.blit(self.water1_image, (my_x, y))
+                    self.surface.blit(self.water1_image, (enemy_x, y))
                 else:
-                    self.surface.blit(self.water_image2, (my_x, y))
-                    self.surface.blit(self.water_image2, (enemy_x, y))
+                    self.surface.blit(self.water2_image, (my_x, y))
+                    self.surface.blit(self.water2_image, (enemy_x, y))
 
-    def draw_tiles_choosing_time(self):
-        for row in range(ROWS):
-            for col in range(COLS):
-                x = col * TILE_SIZE + self.mb_x_offset
-                y = row * TILE_SIZE + self.y_offset
 
-                # jedno zmienia sie w drugie jak zatwierdzimy ze tu jest statek
-                if(self.my_board.get_tile(row, col) == SETTING_SHIP):
-                    self.surface.blit(self.front_ship_image, (x, y))
-                elif(self.my_board.get_tile(row, col) == FRONT_SHIP_H or self.my_board.get_tile(row, col) == MIDDLE_SHIP_H or self.my_board.get_tile(row, col) == BACK_SHIP_H or self.my_board.get_tile(row, col) == FRONT_SHIP_V or self.my_board.get_tile(row, col) == MIDDLE_SHIP_V or self.my_board.get_tile(row, col) == BACK_SHIP_V):
-                    self.surface.blit(self.middle_ship_image, (x, y))
-
-    def draw_tiles(self):
-        for row in range(ROWS):
-            for col in range(COLS):
-                my_x = col * TILE_SIZE + self.mb_x_offset
-                y = row * TILE_SIZE + self.y_offset
-                enemy_x = col * TILE_SIZE + self.eb_x_offset
-
-                if(self.my_board.get_tile(row, col) == MISS):
-                    self.surface.blit(self.miss_image, (my_x, y))
-
-                elif(self.my_board.get_tile(row, col) == FRONT_SHIP_H or self.my_board.get_tile(row, col) == FRONT_SHIP_H_HIT or self.my_board.get_tile(row, col) == FRONT_SHIP_H_HNS):
-                    rotated_image = pygame.transform.rotate(self.front_ship_image, 90)
-                    self.surface.blit(rotated_image, (my_x, y))
-                    if(self.my_board.get_tile(row, col) == FRONT_SHIP_H_HIT):
-                        self.surface.blit(self.hit_image, (my_x, y))
-                    elif(self.my_board.get_tile(row, col) == FRONT_SHIP_H_HNS):
-                        self.surface.blit(self.hit_and_sunk_image, (my_x, y))
-                elif(self.my_board.get_tile(row, col) == MIDDLE_SHIP_H or self.my_board.get_tile(row, col) == MIDDLE_SHIP_H_HIT or self.my_board.get_tile(row, col) == MIDDLE_SHIP_H_HNS):
-                    rotated_image = pygame.transform.rotate(self.middle_ship_image, 90)
-                    self.surface.blit(rotated_image, (my_x, y))
-                    if(self.my_board.get_tile(row, col) == MIDDLE_SHIP_H_HIT):
-                        self.surface.blit(self.hit_image, (my_x, y))
-                    elif(self.my_board.get_tile(row, col) == MIDDLE_SHIP_H_HNS):
-                        self.surface.blit(self.hit_and_sunk_image, (my_x, y))
-                elif(self.my_board.get_tile(row, col) == BACK_SHIP_H or self.my_board.get_tile(row, col) == BACK_SHIP_H_HIT or self.my_board.get_tile(row, col) == BACK_SHIP_H_HNS):
-                    rotated_image = pygame.transform.rotate(self.front_ship_image, -90)
-                    self.surface.blit(rotated_image, (my_x, y))
-                    if(self.my_board.get_tile(row, col) == BACK_SHIP_H_HIT):
-                        self.surface.blit(self.hit_image, (my_x, y))
-                    elif(self.my_board.get_tile(row, col) == BACK_SHIP_H_HNS):
-                        self.surface.blit(self.hit_and_sunk_image, (my_x, y))
-
-                elif(self.my_board.get_tile(row, col) == FRONT_SHIP_V or self.my_board.get_tile(row, col) == FRONT_SHIP_V_HIT or self.my_board.get_tile(row, col) == FRONT_SHIP_V_HNS):
-                    self.surface.blit(self.front_ship_image, (my_x, y))
-                    if(self.my_board.get_tile(row, col) == FRONT_SHIP_V_HIT):
-                        self.surface.blit(self.hit_image, (my_x, y))
-                    elif(self.my_board.get_tile(row, col) == FRONT_SHIP_V_HNS):
-                        self.surface.blit(self.hit_and_sunk_image, (my_x, y))
-                elif(self.my_board.get_tile(row, col) == MIDDLE_SHIP_V or self.my_board.get_tile(row, col) == MIDDLE_SHIP_V_HIT or self.my_board.get_tile(row, col) == MIDDLE_SHIP_V_HNS):
-                    self.surface.blit(self.middle_ship_image, (my_x, y))
-                    if(self.my_board.get_tile(row, col) == MIDDLE_SHIP_V_HIT):
-                        self.surface.blit(self.hit_image, (my_x, y))
-                    elif(self.my_board.get_tile(row, col) == MIDDLE_SHIP_V_HNS):
-                        self.surface.blit(self.hit_and_sunk_image, (my_x, y))
-                elif(self.my_board.get_tile(row, col) == BACK_SHIP_V or self.my_board.get_tile(row, col) == BACK_SHIP_V_HIT or self.my_board.get_tile(row, col) == BACK_SHIP_V_HNS):
-                    rotated_image = pygame.transform.rotate(self.front_ship_image, 180)
-                    self.surface.blit(rotated_image, (my_x, y))
-                    if(self.my_board.get_tile(row, col) == BACK_SHIP_V_HIT):
-                        self.surface.blit(self.hit_image, (my_x, y))
-                    elif(self.my_board.get_tile(row, col) == BACK_SHIP_V_HNS):
-                        self.surface.blit(self.hit_and_sunk_image, (my_x, y))
-                
-
-                # teraz dla planszy przeciwnika
-                if(self.enemy_board.get_tile(row, col) == MISS):
-                    self.surface.blit(self.miss_image, (enemy_x, y))
-                elif(self.enemy_board.get_tile(row, col) == HIT):
-                    self.surface.blit(self.hit_image, (enemy_x, y))
-                elif(self.enemy_board.get_tile(row, col) == HIT_AND_SUNK):
-                    self.surface.blit(self.hit_and_sunk_image, (enemy_x, y))
-                    
-                elif(self.enemy_board.get_tile(row, col) == FRONT_SHIP_H_HNS):
-                    rotated_image = pygame.transform.rotate(self.front_ship_image, 90)
-                    self.surface.blit(rotated_image, (enemy_x, y))
-                    self.surface.blit(self.hit_and_sunk_image, (enemy_x, y))
-                elif(self.enemy_board.get_tile(row, col) == MIDDLE_SHIP_H_HNS):
-                    rotated_image = pygame.transform.rotate(self.middle_ship_image, 90)
-                    self.surface.blit(rotated_image, (enemy_x, y))
-                    self.surface.blit(self.hit_and_sunk_image, (enemy_x, y))
-                elif(self.enemy_board.get_tile(row, col) == BACK_SHIP_H_HNS):
-                    rotated_image = pygame.transform.rotate(self.front_ship_image, -90)
-                    self.surface.blit(rotated_image, (enemy_x, y))
-                    self.surface.blit(self.hit_and_sunk_image, (enemy_x, y))
-
-                elif(self.enemy_board.get_tile(row, col) == FRONT_SHIP_V_HNS):
-                    self.surface.blit(self.front_ship_image, (enemy_x, y))
-                    self.surface.blit(self.hit_and_sunk_image, (enemy_x, y))
-                elif(self.enemy_board.get_tile(row, col) == MIDDLE_SHIP_V_HNS):
-                    self.surface.blit(self.middle_ship_image, (enemy_x, y))
-                    self.surface.blit(self.hit_and_sunk_image, (enemy_x, y))
-                elif(self.enemy_board.get_tile(row, col) == BACK_SHIP_V_HNS):
-                    rotated_image = pygame.transform.rotate(self.front_ship_image, 180)
-                    self.surface.blit(rotated_image, (enemy_x, y))
-                    self.surface.blit(self.hit_and_sunk_image, (enemy_x, y))
-                     
-
-    def draw_outlines(self):
-        pygame.draw.rect(self.surface, PURPLE, (self.mb_x_offset - OUTLINES_WIDTH, 0, COLS * TILE_SIZE + 2 * OUTLINES_WIDTH, ROWS * TILE_SIZE + 2 * OUTLINES_WIDTH), 20)
-        # TODO: tu moze byc zle
-        pygame.draw.rect(self.surface, PURPLE, (self.eb_x_offset - OUTLINES_WIDTH, 0, COLS * TILE_SIZE + 2 * OUTLINES_WIDTH, ROWS * TILE_SIZE + 2 * OUTLINES_WIDTH), 20)
-
-    
-    def draw_confirm_button(self):
-        confirm_text = "ACCEPT"
-        self.text_with_outlines(self, confirm_text, 18, self.surface.get_width() - 120, ((self.surface.get_height() - 540) / 2) + 540)
-
-        font_w = pygame.font.Font(None, 20)
-        text_white = font_w.render(confirm_text, True, (255, 255, 255))
-        # przesuwamy biały tekst
-        text_white_rect = text_white.get_rect(center=(self.screen_width - 150 + 2, self.screen_height - 25 + 2))
-        # nie jest to najlepsze wyjscie ale dopisalem do klasy board pola ktore przechowaja polozenie
-        self.set_x1(text_white_rect.left)
-        self.set_x2(text_white_rect.right)
-        self.set_y1(text_white_rect.top)
-        self.set_y2(text_white_rect.bottom)
-
-        pygame.draw.rect(self.surface, (255, 255, 255), text_white_rect, 4)
-
-    def draw_bottom_bar(self, ship_list):
+    def ships_left(self, map):
         text = ""
-        count = 5
-        for val in ship_list:
-            text += f"{count}x - {val}"
-            count -= 1
+        for key, value in map.items():
+            text += f"{key}: x{value}   "
 
-        self.text_with_outlines(self, text, 16, 180, ((self.surface.get_height - 540) / 2) + 540)
-
-    def fill_bottom_black(self):
-        pygame.draw.rect(self.surface, (0, 0, 0), (0, 540, self.surface.get_width(), self.surface.get_height() - 540))
-
-    def draw_during_game(self, ship_list):
-        self.draw_outlines(self)
-        self.fill_bottom_black(self)
-
-        self.draw_board(self)
-        self.draw_tiles(self)
-
-        self.draw_bottom_bar(self, ship_list)
-        self.draw_confirm_button(self)
-
-    def draw_choosing_time(self, ship_list):
-        self.draw_outlines(self)
-        self.fill_bottom_black(self)
-
-        self.draw_board(self)
-        self.draw_tiles_choosing_time(self)
-
-        self.draw_bottom_bar(self, ship_list)
-        self.draw_confirm_button(self)
-
-    def draw_before_game(self):
-        pygame.draw.rect(self.surface, (0, 0, 0), (0, 540, self.surface.get_width(), self.surface.get_height()))
-        text1 = "Welcome to Battleships"
-        text2 = "Press enter to continue"
-        self.text_with_outlines(self, text1, 48, self.surface.get_width() / 2, self.surface.get_height() / 2 - 50)
-        self.text_with_outlines(self, text2, 24, self.surface.get_width() / 2, self.surface.get_height() / 2 + 50)
-
-    def draw_after_game(self, was_won):
-        pygame.draw.rect(self.surface, (0, 0, 0), (0, 540, self.surface.get_width(), self.surface.get_height()))
-        if(was_won):
-            text = "YOU WON!"
-        else:
-            text = "YOU LOST!"
-
-        text2 = "Press enter to play again"
-        
-        self.text_with_outlines(self, text, 48, self.surface.get_width() / 2, self.surface.get_height() / 2 - 50)
-        self.text_with_outlines(self, text2, 24, self.surface.get_width() / 2, self.surface.get_height() / 2 + 50)
-
-    def text_with_outlines(self, text, text_size, place_x, place_y):
-        font_b = pygame.font.Font(None, text_size)
-        font_w = pygame.font.Font(None, text_size + 2)
-
-        text_black = font_b.render(text, True, (0, 0, 0))
-        text_white = font_w.render(text, True, (255, 255, 255))
-
-        text_black_rect = text_black.get_rect(center=(place_x, place_y))
-        text_white_rect = text_white.get_rect(center=(place_x + 2, place_y + 2))
-
-        self.surface.blit(text_white, text_white_rect)
-        self.surface.blit(text_black, text_black_rect)
+        font = pygame.font.Font(None, 36)
+        text = font.render(text, True, (0, 0, 0))
+        text_rect = text.get_rect(left = 50, top = 625)
+        self.surface.blit(text, text_rect)
 
 
-    def set_x1(self, val):
-        self.x1 = val
-    def set_x2(self, val):
-        self.x2 = val
-    def set_y1(self, val):
-        self.y1 = val
-    def set_y2(self, val):
-        self.y2 = val
+    def draw_ships(self):
+        for row in range(board.ROWS):
+            for col in range(board.COLS):
+                my_x = col * TILE_SIZE + self.my_board_x_offset
+                enemy_x = col * TILE_SIZE + self.enemy_board_x_offset
+                y = row * TILE_SIZE + self.y_offset
 
-    def get_x1(self):
-        return self.x1
-    def get_x2(self):
-        return self.x2
-    def get_y1(self):
-        return self.y1
-    def get_y2(self):
-        return self.y2
+                # tablica gracza
+                if(self.my_board.array[row][col] == board.SHIP):
+                    pygame.draw.rect(self.surface, (0, 0, 0), (my_x, y, TILE_SIZE, TILE_SIZE))
+                elif(self.my_board.array[row][col] == board.ENEMY_SHOT):
+                    self.surface.blit(self.miss_image, (my_x, y))
+                
+                # tablica przeciwnika
+                if(self.enemy_board.array[row][col] == board.HIT):
+                    self.surface.blit(self.hit_image, (enemy_x, y))
+                elif(self.enemy_board.array[row][col] == board.SUNK):
+                    self.surface.blit(self.hit_and_sunk_image, (enemy_x, y))
+                elif(self.enemy_board.array[row][col] == board.MISS):
+                    self.surface.blit(self.miss_image, (enemy_x, y))
